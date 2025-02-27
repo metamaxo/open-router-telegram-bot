@@ -97,7 +97,7 @@ impl TgBot {
     ///extracts chat_id and message content. passes them to the send_message function.
     pub async fn handle_update(&self, update: &messages::telegram::Update) -> Result<(), Error> {
         tracing::debug!("HANDLE UPDATE");
-        let chat_id_num = update.message.chat.id.to_string();
+        let chat_id_num = update.message.chat.get_id().to_string();
         let chat_id = chat_id_num.as_str();
         let text = update.message.text.as_ref().expect("must be text");
         tracing::debug!(?chat_id, ?text, "Handling update");
