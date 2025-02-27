@@ -3,6 +3,8 @@ use serde_json::json;
 mod error;
 mod messages;
 mod utils;
+mod commands;
+
 use dotenvy::dotenv;
 use error::Error;
 use std::env;
