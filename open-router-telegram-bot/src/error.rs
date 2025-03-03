@@ -8,10 +8,6 @@ pub enum Error {
 
     #[error("Generic error: {0}")]
     Generic(String),
-
-    #[error("Invalid Command: {0}")]
-    InvalidCommand(String),
-    // NOTE: Je kan hier je eigen error types toevoegen
     // Er zijn twee soorten errors:
     // 1. Errors die je zelf definieert, zoals hierboven Generic
     // 2. Errors die je van andere libraries overneemt, zoals Http en Json
