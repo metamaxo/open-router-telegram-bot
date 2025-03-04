@@ -9,7 +9,7 @@ pub struct Response {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Update {
     pub update_id: i64,
-    pub message: Message,
+    pub message: Option<Message>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
