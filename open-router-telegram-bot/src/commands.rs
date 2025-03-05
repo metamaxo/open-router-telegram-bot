@@ -36,74 +36,32 @@ impl<'a> TryFrom<&'a str> for Command {
 
 impl CommandTrait for Command {
     async fn execute(&self, bot: &mut TgBot, chat_id: i64) -> Result<(), Error> {
-        match self {
-            Self::Start => {
-                bot.http_client
-                    .post(format!(
-                        "https://api.telegram.org/bot{}/sendMessage?chat_id={}&text={}",
-                        bot.token,
-                        chat_id,
-                        bot_messages::INITIAL_MESSAGE
-                    ))
-                    .send()
-                    .await?;
-                Ok(())
-            }
-            Self::ListModels => {
-                bot.http_client
-                    .post(format!(
-                        "https://api.telegram.org/bot{}/sendMessage?chat_id={}&text={}",
-                        bot.token,
-                        chat_id,
-                        bot_messages::MODEL_LIST
-                    ))
-                    .send()
-                    .await?;
-                Ok(())
-            }
-            Self::Model => {
-                bot.http_client
-                    .post(format!(
-                        "https://api.telegram.org/bot{}/sendMessage?chat_id={}&text={}",
-                        bot.token,
-                        chat_id,
-                        format!("i'm currently using: {} ", bot.model.as_str())
-                    ))
-                    .send()
-                    .await?;
-                Ok(())
-            }
+        let message = match self {
+            Self::Start => bot_messages::INITIAL_MESSAGE.to_string(),
+            Self::ListModels => bot_messages::MODEL_LIST.to_string(),
+            Self::Model => format!("i'm currently using: {}", bot.model.to_string()),
             Self::Frog(query) => {
                 tracing::debug!("answering query");
-                let response = open_router(query, bot.model.as_str()).await;
-                bot.http_client
-                    .post(format!(
-                        "https://api.telegram.org/bot{}/sendMessage?chat_id={}&text={}",
-                        bot.token,
-                        chat_id,
-                        response?.join("\n"),
-                    ))
-                    .send()
-                    .await?;
-                Ok(())
+                open_router(query, bot.model).await?.join("\n")
             }
             Self::ChangeModel(new_model) => {
                 bot.change_model(new_model);
-                bot.http_client
-                    .post(format!(
-                        "https://api.telegram.org/bot{}/sendMessage?chat_id={}&text={}",
-                        bot.token,
-                        chat_id,
-                        format!("changed model to: {} ", bot.model.as_str())
-                    ))
-                    .send()
-                    .await?;
-                Ok(())
+                format!("changed model to: {}", bot.model.to_string())
             }
             Self::Unknown => {
                 tracing::debug!("unknown command");
-                Ok(())
+                return Ok(());
             }
-        }
+        };
+
+        let url = format!("https://api.telegram.org/bot{}/sendMessage", bot.token);
+
+        bot.http_client
+            .post(url)
+            .query(&[("chat_id", chat_id.to_string()), ("text", message)])
+            .send()
+            .await?;
+
+        Ok(())
     }
 }

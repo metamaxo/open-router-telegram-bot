@@ -1,15 +1,16 @@
 use crate::messages;
+use crate::telegram_bot::Model;
 use crate::Error;
 use messages::bot_messages;
 use serde_json::json;
 use std::env;
 
 ///uses the open_router api to generate a response
-pub async fn open_router(message: &String, model: &str) -> Result<Vec<String>, Error> {
+pub async fn open_router(message: &String, model: Model) -> Result<Vec<String>, Error> {
     let mut result = Vec::new();
     let response = get_response(
         json!({
-            "model": model,
+            "model": model.to_string(),
             "messages": [
             {
                 "role": "user",

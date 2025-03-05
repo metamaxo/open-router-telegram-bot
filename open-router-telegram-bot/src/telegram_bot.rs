@@ -5,10 +5,60 @@ use commands::Command;
 use commands::CommandTrait;
 use error::Error;
 
+#[derive(Default, Clone, Copy)]
+pub enum Model {
+    Weaver,
+    Unslopnemo,
+    Gemini,
+    Deepseek,
+    Claude,
+    Llama,
+    #[default]
+    OpenAi,
+}
+
+impl std::fmt::Display for Model {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", String::from(*self))
+    }
+}
+
+impl From<Model> for String {
+    fn from(model: Model) -> Self {
+        match model {
+            Model::Unslopnemo => "thedrummer/unslopnemo-12b".to_string(),
+            Model::Gemini => "google/gemini-2.0-flash-001".to_string(),
+            Model::Deepseek => "deepseek/deepseek-r1-distill-llama-8b".to_string(),
+            Model::Claude => "anthropic/claude-3.5-sonnet".to_string(),
+            Model::Llama => "sao10k/13.1-70b-hanami-x1".to_string(),
+            Model::OpenAi => "openai/gpt-4o".to_string(),
+            Model::Weaver => "mancer/weaver".to_string(),
+        }
+    }
+}
+
+impl TryFrom<&str> for Model {
+    type Error = ();
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Ok(match value {
+            _ if value.contains("weaver") => Self::Weaver,
+            _ if value.contains("unslopnemo") => Self::Unslopnemo,
+            _ if value.contains("gemini") => Self::Gemini,
+            _ if value.contains("deepseek") => Self::Deepseek,
+            _ if value.contains("claude") => Self::Claude,
+            _ if value.contains("llama") => Self::Llama,
+            _ if value.contains("openai") => Self::OpenAi,
+            _ if value.contains("gpt") => Self::OpenAi,
+            _ => return Err(()),
+        })
+    }
+}
+
 pub struct TgBot {
     pub http_client: reqwest::Client,
     pub token: String,
-    pub model: String,
+    pub model: Model,
     pub offset: i64,
 }
 
@@ -19,7 +69,7 @@ impl TgBot {
         TgBot {
             token: token.to_string(),
             http_client: reqwest::Client::new(),
-            model: String::from("openai/gpt-4o"),
+            model: Model::default(),
             offset: 0,
         }
     }
@@ -49,16 +99,9 @@ impl TgBot {
         }
     }
 
-    pub fn change_model(&mut self, model: &String) {
-        match model.to_lowercase().as_str() {
-            "unslopnemo" => self.model = String::from("thedrummer/unslopnemo-12b"),
-            "gemini" => self.model = String::from("google/gemini-2.0-flash-001"),
-            "deepseek" => self.model = String::from("deepseek/deepseek-r1-distill-llama-8b"),
-            "claude" => self.model = String::from("anthropic/claude-3.5-sonnet"),
-            "llama" => self.model = String::from("sao10k/13.1-70b-hanami-x1"),
-            "open-ai" => self.model = String::from("openai/gpt-4o"),
-            "weaver" => self.model = String::from("mancer/weaver"),
-            _ => (),
+    pub fn change_model(&mut self, model: &str) {
+        if let Ok(model) = Model::try_from(model) {
+            self.model = model;
         }
     }
 
