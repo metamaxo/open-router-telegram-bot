@@ -381,7 +381,7 @@ mod tests {
         assert_eq!(response.result.len(), 12);
 
         // Test a message with text and entities
-        let message_with_text = &response.result[0].message;
+        let message_with_text = &response.result[0].message.as_ref().unwrap();
         assert_eq!(message_with_text.message_id, 468);
         assert_eq!(message_with_text.text, Some("/help".to_string()));
         assert!(message_with_text.entities.is_some());
@@ -391,13 +391,13 @@ mod tests {
         );
 
         // Test a message with group_chat_created
-        let message_with_group_chat = &response.result[5].message;
+        let message_with_group_chat = &response.result[5].message.as_ref().unwrap();
         assert_eq!(message_with_group_chat.message_id, 482);
         assert!(message_with_group_chat.group_chat_created.unwrap());
         assert_eq!(message_with_group_chat.text, None);
 
         // Test chat types
-        match &response.result[0].message.chat {
+        match &response.result[0].message.as_ref().unwrap().chat {
             Chat::Private {
                 id,
                 first_name,
@@ -412,7 +412,7 @@ mod tests {
             _ => panic!("Expected Private chat"),
         }
 
-        match &response.result[5].message.chat {
+        match &response.result[5].message.as_ref().unwrap().chat {
             Chat::Group {
                 id,
                 title,
