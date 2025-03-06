@@ -21,15 +21,21 @@ impl TgBot {
                 content: format!("{}{}", bot_messages::PROMPT, message),
             }],
         };
-        let response = self
+
+        let req = self
             .http_client
             .post(OPEN_ROUTER_COMPLETIONS_URL)
-            .header("Authorization", self.open_router_key())
+            .header("Authorization", format!("Bearer {}", self.open_router_key()))
+            .header("Content-Type", "application/json")
             .json(&request)
-            .send()
-            .await?
-            .json::<messages::openrouter::Response>()
-            .await?;
+            .build()?;
+
+        println!("{:?}", req);
+        let response = self.http_client.execute(req).await?.json::<serde_json::Value>().await?;
+
+        println!("{:?}", response);
+
+        let response = serde_json::from_value::<messages::openrouter::Response>(response)?;
 
         let mut result = Vec::new();
         for update in response.choices {
@@ -37,5 +43,42 @@ impl TgBot {
             result.push(r);
         }
         Ok(result)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::telegram_bot::Config;
+    use dotenvy::dotenv;
+    use std::env;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_call_open_router() -> Result<(), Error> {
+        // Load .env file if present
+        dotenv().ok();
+        
+        // Get API key from environment or skip test
+        let api_key = match env::var("OPEN_ROUTER_KEY") {
+            Ok(key) => key,
+            Err(_) => {
+                println!("Skipping test: OPEN_ROUTER_KEY not set");
+                return Ok(());
+            }
+        };
+
+        let cfg = Config {
+            open_router_key: api_key,
+            ..Default::default()
+        };
+        
+        let bot = TgBot::new(cfg);
+        let message = "hello";
+        let response = bot.call_open_router(message).await?;
+        
+        // Basic validation of response
+        assert!(!response.is_empty());
+        Ok(())
     }
 }
