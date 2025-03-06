@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 /// Model enum
 /// Capture the different models that can be used
 /// The default model is OpenAi
-#[derive(Default, Clone, Copy, Serialize, Deserialize, Debug)]
+#[derive(Default, Clone, Copy, Debug)]
 pub enum Model {
     Weaver,
     Unslopnemo,
@@ -56,6 +56,29 @@ impl TryFrom<&str> for Model {
             _ if value.contains("openai") => Self::OpenAi,
             _ if value.contains("gpt") => Self::OpenAi,
             _ => return Err(()),
+        })
+    }
+}
+
+/// Custom serialization implementation to use the Display format
+impl Serialize for Model {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(<&str>::from(*self))
+    }
+}
+
+/// Custom deserialization implementation
+impl<'de> Deserialize<'de> for Model {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Model::try_from(s.as_str()).map_err(|_| {
+            serde::de::Error::custom(format!("unknown model type: {}", s))
         })
     }
 }

@@ -21,15 +21,29 @@ impl TgBot {
                 content: format!("{}{}", bot_messages::PROMPT, message),
             }],
         };
-        let response = self
+
+        let req = self
             .http_client
             .post(OPEN_ROUTER_COMPLETIONS_URL)
-            .header("Authorization", self.open_router_key())
+            .header(
+                "Authorization",
+                format!("Bearer {}", self.open_router_key()),
+            )
+            .header("Content-Type", "application/json")
             .json(&request)
-            .send()
+            .build()?;
+
+        println!("{:?}", req);
+        let response = self
+            .http_client
+            .execute(req)
             .await?
-            .json::<messages::openrouter::Response>()
+            .json::<serde_json::Value>()
             .await?;
+
+        println!("{:?}", response);
+
+        let response = serde_json::from_value::<messages::openrouter::Response>(response)?;
 
         let mut result = Vec::new();
         for update in response.choices {
