@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::model::Model;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Response {
     pub choices: Vec<Choice>,
@@ -12,5 +14,12 @@ pub struct Choice {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Message {
+    pub role: String,
     pub content: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Request {
+    pub model: Model,
+    pub messages: Vec<Message>,
 }

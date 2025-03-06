@@ -1,57 +1,41 @@
+use crate::constants::OPEN_ROUTER_COMPLETIONS_URL;
 use crate::messages;
-use crate::telegram_bot::Model;
+use crate::messages::openrouter::{Message, Request};
+use crate::telegram_bot::TgBot;
 use crate::Error;
 use messages::bot_messages;
-use serde_json::json;
-use std::env;
 
-///uses the open_router api to generate a response
-pub async fn open_router(message: &String, model: Model) -> Result<Vec<String>, Error> {
-    let mut result = Vec::new();
-    let response = get_response(
-        json!({
-            "model": model.to_string(),
-            "messages": [
-            {
-                "role": "user",
-                "content": format!("{}{}", bot_messages::PROMPT, message)
-            }
-            ]
-        }),
-        env::var("OPEN_ROUTER_KEY").expect("Open-Router key must be set!"),
-    )
-    .await;
+// NOTE: Simplified the open router calling logic and added it to the TgBot struct.
+// This makes it so that fields like `model` are always consistent with the bot instance.
+// Also makes it so that the http client used is that of the bot instance, so we don't
+// have to create a new client every time we want to make a request.
+//
+// NOTE: Also removed use of `json` macro in favor of constructing the JSON object as a struct,
+// which is then serialized to JSON. This makes it easier to make changes later.
+impl TgBot {
+    pub async fn call_open_router(&self, message: &str) -> Result<Vec<String>, Error> {
+        let request = Request {
+            model: self.model(),
+            messages: vec![Message {
+                role: "user".to_string(),
+                content: format!("{}{}", bot_messages::PROMPT, message),
+            }],
+        };
+        let response = self
+            .http_client
+            .post(OPEN_ROUTER_COMPLETIONS_URL)
+            .header("Authorization", self.open_router_key())
+            .json(&request)
+            .send()
+            .await?
+            .json::<messages::openrouter::Response>()
+            .await?;
 
-    tracing::debug!("got response");
-    match response {
-        Ok(content) => {
-            for update in content.choices {
-                let r = update.message.content;
-                result.push(r);
-            }
-            Ok(result)
+        let mut result = Vec::new();
+        for update in response.choices {
+            let r = update.message.content;
+            result.push(r);
         }
-        Err(e) => {
-            tracing::error!(?e, "Failed to get response from OpenAI");
-            Err(Error::Generic(
-                "I'm sorry, something went wrong".to_string(),
-            ))
-        }
+        Ok(result)
     }
-}
-pub async fn get_response(
-    body: serde_json::Value,
-    token: String,
-) -> Result<messages::openrouter::Response, reqwest::Error> {
-    tracing::debug!("sending request to openrouter");
-    let client = reqwest::Client::new();
-    const URL: &str = "https://openrouter.ai/api/v1/chat/completions";
-    client
-        .post(URL)
-        .header("Authorization", token)
-        .json(&body)
-        .send()
-        .await?
-        .json()
-        .await
 }
