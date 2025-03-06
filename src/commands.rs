@@ -1,6 +1,5 @@
 use crate::error::Error;
 use crate::messages::bot_messages;
-use crate::open_router::open_router;
 use crate::telegram_bot::TgBot;
 
 pub trait CommandTrait: for<'a> TryFrom<&'a str> {
@@ -39,14 +38,14 @@ impl CommandTrait for Command {
         let message = match self {
             Self::Start => bot_messages::INITIAL_MESSAGE.to_string(),
             Self::ListModels => bot_messages::MODEL_LIST.to_string(),
-            Self::Model => format!("i'm currently using: {}", bot.model.to_string()),
+            Self::Model => format!("i'm currently using: {}", bot.model()),
             Self::Frog(query) => {
                 tracing::debug!("answering query");
-                open_router(query, bot.model).await?.join("\n")
+                bot.call_open_router(query).await?.join("\n")
             }
             Self::ChangeModel(new_model) => {
                 bot.change_model(new_model);
-                format!("changed model to: {}", bot.model.to_string())
+                format!("changed model to: {}", bot.model())
             }
             Self::Unknown => {
                 tracing::debug!("unknown command");
@@ -54,14 +53,6 @@ impl CommandTrait for Command {
             }
         };
 
-        let url = format!("https://api.telegram.org/bot{}/sendMessage", bot.token);
-
-        bot.http_client
-            .post(url)
-            .query(&[("chat_id", chat_id.to_string()), ("text", message)])
-            .send()
-            .await?;
-
-        Ok(())
+        bot.send_message(chat_id, &message).await
     }
 }
