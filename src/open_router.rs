@@ -25,13 +25,21 @@ impl TgBot {
         let req = self
             .http_client
             .post(OPEN_ROUTER_COMPLETIONS_URL)
-            .header("Authorization", format!("Bearer {}", self.open_router_key()))
+            .header(
+                "Authorization",
+                format!("Bearer {}", self.open_router_key()),
+            )
             .header("Content-Type", "application/json")
             .json(&request)
             .build()?;
 
         println!("{:?}", req);
-        let response = self.http_client.execute(req).await?.json::<serde_json::Value>().await?;
+        let response = self
+            .http_client
+            .execute(req)
+            .await?
+            .json::<serde_json::Value>()
+            .await?;
 
         println!("{:?}", response);
 
