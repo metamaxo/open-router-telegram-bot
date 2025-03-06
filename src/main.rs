@@ -15,11 +15,24 @@ use error::Error;
 use std::env;
 
 #[derive(clap::Parser)]
+#[command(
+    name = "OpenRouter Telegram Bot",
+    author = "Metamaxo",
+    version = "1.0.0",
+    about = "A Telegram bot that uses OpenRouter's API to interact with various AI models",
+    long_about = "This bot allows users to interact with various AI models through Telegram, \
+                  powered by OpenRouter's API. It supports multiple AI models and provides \
+                  a simple interface for chatting with AI directly in Telegram."
+)]
 struct Args {
     /// Polling interval in milliseconds
     /// NOTE: This was hardcoded before, now it's configurable but the default value is 5000
     /// which was the previously hardcoded value.
-    #[clap(long, default_value = "5000")]
+    #[clap(
+        long,
+        default_value = "5000",
+        help = "Set the bot's polling interval in milliseconds"
+    )]
     polling_interval: u64,
 }
 
